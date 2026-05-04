@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, CheckCircle, AlertCircle, Truck } from 'lucide-react';
 import { API_URL } from '../config';
 
 export default function CerrarCaja({ ventas, gastos, reservas, config }) {
-  const [efectivoInicial, setEfectivoInicial] = useState('5000');
+  const [efectivoInicial, setEfectivoInicial] = useState(() => localStorage.getItem('mk_efectivoInicial') || '0');
+  const [plataASacar, setPlataASacar] = useState(() => localStorage.getItem('mk_plataASacar') || '0');
   const [confirmed, setConfirmed] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('mk_efectivoInicial', efectivoInicial);
+  }, [efectivoInicial]);
+
+  useEffect(() => {
+    localStorage.setItem('mk_plataASacar', plataASacar);
+  }, [plataASacar]);
 
   const getLocalToday = () => {
     const d = new Date();
@@ -74,7 +83,11 @@ Fecha: ${formattedDate}
 *Cierre Físico y Digital*
 💰 Reservas Apartadas Hoy: $${reservasHoy.toLocaleString()}
 💵 Efectivo en Caja Esperado: $${efectivoReal.toLocaleString()}
-🏦 Transferencias Totales: $${transferenciaReal.toLocaleString()}`;
+🏦 Transferencias Totales: $${transferenciaReal.toLocaleString()}
+
+*Retiro de Caja*
+💸 Efectivo a Retirar: $${parseInt(plataASacar || 0).toLocaleString()}
+🔒 Queda en Caja para Mañana: $${(efectivoReal - parseInt(plataASacar || 0)).toLocaleString()}`;
       
       try {
         const res = await fetch(`${API_URL}/whatsapp/send`, {
@@ -262,21 +275,28 @@ Fecha: ${formattedDate}
           <div className="cierre-divider"></div>
 
           {/* Reserva para mañana */}
+          {/* Retiro de Plata */}
           <div className="cierre-section">
-            <h3>🔒 Reservas (Efectivo Apartado)</h3>
+            <h3>💸 Retiro de Caja</h3>
             <div className="info-banner" style={{ margin: '0.75rem 0 1rem' }}>
-              <span>Dinero en efectivo que ya separaste en la caja durante el día.</span>
+              <span>¿Cuánta plata vas a retirar de la caja al finalizar el día? El resto quedará como inicial de mañana.</span>
             </div>
             <div className="cierre-row">
-              <span>Total apartado hoy</span>
-              <strong style={{ color: '#EAB308', fontSize: '1.2rem' }}>
-                ${reservasHoy.toLocaleString()}
-              </strong>
+              <span>Monto a retirar ($)</span>
+              <div className="form-group" style={{ maxWidth: '150px', margin: 0 }}>
+                <input
+                  type="number"
+                  placeholder="$0"
+                  value={plataASacar}
+                  onChange={e => setPlataASacar(e.target.value)}
+                  style={{ padding: '0.5rem', textAlign: 'right' }}
+                />
+              </div>
             </div>
             <div className="cierre-row highlight" style={{ marginTop: '1rem', backgroundColor: 'var(--surface-color)', padding: '1rem', borderRadius: '8px' }}>
-              <span>💰 Efectivo final a retirar</span>
+              <span>🔒 Queda en Caja para mañana</span>
               <strong className="positive" style={{ fontSize: '1.4rem' }}>
-                ${efectivoReal.toLocaleString()}
+                ${(efectivoReal - parseInt(plataASacar || 0)).toLocaleString()}
               </strong>
             </div>
           </div>

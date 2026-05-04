@@ -14,8 +14,7 @@ export default function Reservas({ reservas, setReservas }) {
   const todayStr = getLocalToday();
 
   const reservasArray = reservas || [];
-  const todayReservas = reservasArray.filter(r => r.date === todayStr);
-  const totalReservasHoy = todayReservas.reduce((acc, r) => acc + r.amount, 0);
+  const totalReservas = reservasArray.reduce((acc, r) => acc + r.amount, 0);
 
   const handleAddOrEdit = async () => {
     if (!form.amount) return;
@@ -91,8 +90,8 @@ export default function Reservas({ reservas, setReservas }) {
     <div className="dashboard-content">
       <div className="summary-cards">
         <div className="summary-card">
-          <div className="summary-title" style={{ color: '#EAB308' }}><DollarSign size={16} /> Total Apartado Hoy</div>
-          <div className="summary-value positive" style={{ color: '#EAB308' }}>${totalReservasHoy.toLocaleString()}</div>
+          <div className="summary-title" style={{ color: '#EAB308' }}><DollarSign size={16} /> Total Apartado</div>
+          <div className="summary-value positive" style={{ color: '#EAB308' }}>${totalReservas.toLocaleString()}</div>
         </div>
       </div>
 

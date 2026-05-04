@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Activity, Plus, Save, Calendar, X, Truck, Trash2 } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Activity, Plus, Save, Calendar, X, Truck, Trash2, Edit2 } from 'lucide-react';
 import { API_URL } from '../config';
 import { catalogProducts } from '../data';
 
@@ -10,6 +10,7 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
 
   // Reserva form
   const [reservaForm, setReservaForm] = useState({ amount: '', notes: '' });
+  const [editingReservaId, setEditingReservaId] = useState(null);
 
   // Venta form
   const [ventaForm, setVentaForm] = useState({
@@ -134,28 +135,57 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
     }).catch(console.error);
   };
 
-  const handleAddReserva = () => {
+  const handleAddOrEditReserva = () => {
     if (!reservaForm.amount) return;
     
-    const newReserva = {
-      id: Date.now(),
-      date: todayStr,
-      time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-      amount: parseInt(reservaForm.amount),
-      notes: reservaForm.notes || 'Reserva del día',
-    };
+    if (editingReservaId) {
+      const updated = {
+        amount: parseInt(reservaForm.amount),
+        notes: reservaForm.notes
+      };
 
-    fetch(`${API_URL}/reservas`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newReserva)
-    }).then(res => {
-      if (res.ok) {
-        setReservas([newReserva, ...(reservas || [])]);
-        setReservaForm({ amount: '', notes: '' });
-        setShowReservaForm(false);
-      }
-    }).catch(console.error);
+      fetch(`${API_URL}/reservas/${editingReservaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      }).then(res => {
+        if (res.ok) {
+          setReservas(reservas.map(r => r.id === editingReservaId ? { ...r, ...updated } : r));
+          setReservaForm({ amount: '', notes: '' });
+          setShowReservaForm(false);
+          setEditingReservaId(null);
+        }
+      }).catch(console.error);
+    } else {
+      const newReserva = {
+        id: Date.now(),
+        date: todayStr,
+        time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        amount: parseInt(reservaForm.amount),
+        notes: reservaForm.notes || 'Reserva del día',
+      };
+
+      fetch(`${API_URL}/reservas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newReserva)
+      }).then(res => {
+        if (res.ok) {
+          setReservas([newReserva, ...(reservas || [])]);
+          setReservaForm({ amount: '', notes: '' });
+          setShowReservaForm(false);
+        }
+      }).catch(console.error);
+    }
+  };
+
+  const handleEditReserva = (reserva) => {
+    setEditingReservaId(reserva.id);
+    setReservaForm({
+      amount: reserva.amount.toString(),
+      notes: reserva.notes || ''
+    });
+    setShowReservaForm(true);
   };
 
   const handleDeleteReserva = (id) => {
@@ -169,6 +199,7 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
   };
 
   const todayReservas = reservas ? reservas.filter(r => r.date === todayStr) : [];
+  const totalReservasAcumuladas = reservas ? reservas.reduce((a, r) => a + r.amount, 0) : 0;
 
   return (
     <div className="dashboard-content">
@@ -267,7 +298,7 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
           </div>
         </button>
 
-        <button className="resumen-action-btn reservas" onClick={() => { setShowReservaForm(!showReservaForm); setShowVentaForm(false); setShowGastoForm(false); }} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+        <button className="resumen-action-btn reservas" onClick={() => { setShowReservaForm(!showReservaForm); setShowVentaForm(false); setShowGastoForm(false); setEditingReservaId(null); setReservaForm({amount:'', notes:''}); }} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
           <div className="action-btn-icon"><DollarSign size={28} style={{ color: '#EAB308' }} /></div>
           <div className="action-btn-text">
             <strong>Añadir Reserva</strong>
@@ -288,9 +319,9 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
       {todayReservas.length > 0 && (
         <div className="resumen-detail-row" style={{ marginTop: '2rem', display: 'block' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <DollarSign style={{ color: '#EAB308' }} size={20} /> Reservas del Día
+            <DollarSign style={{ color: '#EAB308' }} size={20} /> Últimas Reservas (Hoy)
             <span style={{ fontSize: '0.9rem', opacity: 0.7, fontWeight: 'normal', marginLeft: 'auto' }}>
-              Total: <strong style={{ color: '#EAB308', fontSize: '1.2rem' }}>${reservasHoy.toLocaleString()}</strong>
+              Total Apartado: <strong style={{ color: '#EAB308', fontSize: '1.2rem' }}>${totalReservasAcumuladas.toLocaleString()}</strong>
             </span>
           </h3>
           <div className="entries-list" style={{ marginTop: '0.5rem' }}>
@@ -301,9 +332,14 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
                   <strong style={{ fontSize: '1.1rem' }}>${reserva.amount.toLocaleString()}</strong>
                   <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>{reserva.notes}</div>
                 </div>
-                <button className="icon-btn delete" onClick={() => handleDeleteReserva(reserva.id)}>
-                  <Trash2 size={18} />
-                </button>
+                <div className="icon-actions">
+                  <button className="icon-btn edit" onClick={() => handleEditReserva(reserva)} style={{ color: 'var(--text-secondary)' }}>
+                    <Edit2 size={18} />
+                  </button>
+                  <button className="icon-btn delete" onClick={() => handleDeleteReserva(reserva.id)}>
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -456,11 +492,11 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
 
       {/* ========== FORMULARIO DE RESERVA (POPUP) ========== */}
       {showReservaForm && (
-        <div className="modal-overlay fade-in" onClick={(e) => { if (e.target.className.includes('modal-overlay')) setShowReservaForm(false); }}>
+        <div className="modal-overlay fade-in" onClick={(e) => { if (e.target.className.includes('modal-overlay')) { setShowReservaForm(false); setEditingReservaId(null); setReservaForm({amount:'', notes:''}); } }}>
           <div className="form-card modal-form-card fade-in">
           <div className="form-header">
-            <h3>Separar Reserva (Efectivo)</h3>
-            <button className="icon-btn" onClick={() => setShowReservaForm(false)}><X size={18} /></button>
+            <h3>{editingReservaId ? 'Editar Reserva' : 'Separar Reserva (Efectivo)'}</h3>
+            <button className="icon-btn" onClick={() => { setShowReservaForm(false); setEditingReservaId(null); setReservaForm({amount:'', notes:''}); }}><X size={18} /></button>
           </div>
           <div className="form-grid">
             <div className="form-group">
@@ -472,8 +508,8 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
               <input type="text" placeholder="Ej: Cambio para mañana" value={reservaForm.notes} onChange={e => setReservaForm({ ...reservaForm, notes: e.target.value })} />
             </div>
           </div>
-          <button className="btn-primary" onClick={handleAddReserva} style={{ marginTop: '1.25rem', width: '100%', justifyContent: 'center', padding: '0.85rem', backgroundColor: '#EAB308', color: '#000' }}>
-            CONFIRMAR RESERVA
+          <button className="btn-primary" onClick={handleAddOrEditReserva} style={{ marginTop: '1.25rem', width: '100%', justifyContent: 'center', padding: '0.85rem', backgroundColor: '#EAB308', color: '#000' }}>
+            {editingReservaId ? 'GUARDAR CAMBIOS' : 'CONFIRMAR RESERVA'}
           </button>
         </div>
         </div>
