@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Activity, Plus, Save, Calendar, X, Truck } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Activity, Plus, Save, Calendar, X, Truck, Trash2 } from 'lucide-react';
 import { API_URL } from '../config';
 import { catalogProducts } from '../data';
 
@@ -158,6 +158,18 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
     }).catch(console.error);
   };
 
+  const handleDeleteReserva = (id) => {
+    fetch(`${API_URL}/reservas/${id}`, { method: 'DELETE' })
+      .then(res => {
+        if (res.ok) {
+          setReservas(reservas.filter(r => r.id !== id));
+        }
+      })
+      .catch(console.error);
+  };
+
+  const todayReservas = reservas ? reservas.filter(r => r.date === todayStr) : [];
+
   return (
     <div className="dashboard-content">
       {/* Tarjetas principales */}
@@ -271,6 +283,32 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
           </div>
         </button>
       </div>
+
+      {/* ========== LISTA DE RESERVAS DEL DÍA ========== */}
+      {todayReservas.length > 0 && (
+        <div className="resumen-detail-row" style={{ marginTop: '2rem', display: 'block' }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+            <DollarSign style={{ color: '#EAB308' }} size={20} /> Reservas del Día
+            <span style={{ fontSize: '0.9rem', opacity: 0.7, fontWeight: 'normal', marginLeft: 'auto' }}>
+              Total: <strong style={{ color: '#EAB308', fontSize: '1.2rem' }}>${reservasHoy.toLocaleString()}</strong>
+            </span>
+          </h3>
+          <div className="entries-list" style={{ marginTop: '0.5rem' }}>
+            {todayReservas.map(reserva => (
+              <div className="entry-card" key={reserva.id} style={{ display: 'flex', alignItems: 'center', padding: '1rem', backgroundColor: 'var(--card-bg)', borderRadius: '12px', marginBottom: '0.5rem' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>{reserva.time}</div>
+                  <strong style={{ fontSize: '1.1rem' }}>${reserva.amount.toLocaleString()}</strong>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>{reserva.notes}</div>
+                </div>
+                <button className="icon-btn delete" onClick={() => handleDeleteReserva(reserva.id)}>
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ========== FORMULARIO DE VENTA (POPUP) ========== */}
       {showVentaForm && (

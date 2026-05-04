@@ -14,6 +14,7 @@ import Estadisticas from './pages/Estadisticas';
 import CerrarCaja from './pages/CerrarCaja';
 import Configuracion from './pages/Configuracion';
 import PlanesMensuales from './pages/PlanesMensuales';
+import Reservas from './pages/Reservas';
 
 function App() {
   const [activeTab, setActiveTab] = useState('resumen');
@@ -76,6 +77,7 @@ function App() {
     { key: 'planes', label: 'Planes Mensuales', icon: Users, section: 'CAJA DIARIA' },
     { key: 'cierre', label: 'Cerrar Caja', icon: Save, section: 'CAJA DIARIA' },
     { key: 'gastos', label: 'Gastos', icon: Activity, section: 'CAJA DIARIA' },
+    { key: 'reservas', label: 'Reservas', icon: DollarSign, section: 'CAJA DIARIA' },
     { key: 'envios', label: 'Envíos', icon: Truck, section: 'CAJA DIARIA' },
     { key: 'productos', label: 'Productos', icon: Coffee, section: 'NEGOCIO' },
     { key: 'calendario', label: 'Calendario', icon: Calendar, section: 'NEGOCIO' },
@@ -90,6 +92,7 @@ function App() {
     ventas: 'Registro de ventas del día.',
     cierre: 'Cierre y balance de caja.',
     gastos: 'Control de gastos diarios.',
+    reservas: 'Gestión de efectivo apartado.',
     envios: 'Gestión de envíos y compensaciones.',
     productos: 'Catálogo de productos y menús.',
     calendario: 'Historial de ganancias por día.',
@@ -100,7 +103,7 @@ function App() {
 
   const renderPage = () => {
     switch (activeTab) {
-      case 'resumen': return <Resumen onNavigate={handleNavigate} ventas={ventas} setVentas={setVentas} gastos={gastos} setGastos={setGastos} />;
+      case 'resumen': return <Resumen onNavigate={handleNavigate} ventas={ventas} setVentas={setVentas} gastos={gastos} setGastos={setGastos} reservas={reservas} setReservas={setReservas} />;
       case 'ventas': return <VentasHoy autoOpen={autoOpen} onAutoOpenDone={() => setAutoOpen(false)} ventas={ventas} setVentas={setVentas} />;
       case 'cierre': return <CerrarCaja ventas={ventas} gastos={gastos} reservas={reservas} config={config} />;
       case 'gastos': return <Gastos autoOpen={autoOpen} onAutoOpenDone={() => setAutoOpen(false)} gastos={gastos} setGastos={setGastos} />;
@@ -110,6 +113,7 @@ function App() {
       case 'estadisticas': return <Estadisticas ventas={ventas} gastos={gastos} />;
       case 'planes': return <PlanesMensuales planes={planes} setPlanes={setPlanes} />;
       case 'configuracion': return <Configuracion config={config} setConfig={setConfig} />;
+      case 'reservas': return <Reservas reservas={reservas} setReservas={setReservas} />;
       default: return <Resumen onNavigate={handleNavigate} ventas={ventas} setVentas={setVentas} gastos={gastos} setGastos={setGastos} reservas={reservas} setReservas={setReservas} />;
     }
   };
