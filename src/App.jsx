@@ -26,8 +26,15 @@ function App() {
   const [gastos, setGastos] = useState([]);
   const [reservas, setReservas] = useState([]);
   const [planes, setPlanes] = useState([]);
-  const [config, setConfig] = useState(initialConfig);
+  const [config, setConfig] = useState(() => {
+    const saved = localStorage.getItem('mk_config');
+    return saved ? JSON.parse(saved) : initialConfig;
+  });
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    localStorage.setItem('mk_config', JSON.stringify(config));
+  }, [config]);
 
   // Load data from backend
   useEffect(() => {
