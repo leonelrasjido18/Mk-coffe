@@ -4,7 +4,7 @@ const db = require('./database');
 const { initWhatsApp, sendMessage, getStatus, getQR, logoutWhatsApp } = require('./whatsapp');
 
 const app = express();
-const PORT = 5000;
+const PORT = 5005;
 
 app.use(cors());
 app.use(express.json());
