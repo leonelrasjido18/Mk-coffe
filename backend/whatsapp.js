@@ -70,12 +70,21 @@ async function sendMessage(phoneNumber, message) {
   }
 
   let formattedNumber = phoneNumber.replace(/[^0-9]/g, '');
-  if (!formattedNumber.startsWith('54')) {
-    formattedNumber = '54' + formattedNumber;
+  if (formattedNumber.length === 10) {
+    formattedNumber = '549' + formattedNumber; // Auto-add 549 if they just typed the 10 digits
+  } else if (formattedNumber.startsWith('54') && !formattedNumber.startsWith('549') && formattedNumber.length === 12) {
+    formattedNumber = '549' + formattedNumber.substring(2); // Convert 54... to 549...
   }
-  const chatId = formattedNumber + '@c.us';
 
   try {
+    // Pedirle a WhatsApp que valide el número y nos dé el ID oficial
+    const numberDetails = await client.getNumberId(formattedNumber);
+    
+    if (!numberDetails) {
+      throw new Error(`El número ${formattedNumber} no está registrado en WhatsApp o el formato es incorrecto.`);
+    }
+
+    const chatId = numberDetails._serialized;
     await client.sendMessage(chatId, message);
     console.log(`✅ Mensaje enviado a +${formattedNumber}`);
     return true;
