@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env
+.DS_Store
+
+# Backend específicos
+backend/node_modules/
+backend/whatsapp-session/
+backend/database.sqlite
