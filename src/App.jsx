@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initialConfig } from './data';
 import { API_URL } from './config';
 import { 
-  DollarSign, Coffee, PieChart, Save, Activity, Calendar, Truck, BarChart2, Home, Settings, Users
+  DollarSign, Coffee, PieChart, Save, Activity, Calendar, Truck, BarChart2, Home, Settings, Users, Menu, X
 } from 'lucide-react';
 import Resumen from './pages/Resumen';
 import VentasHoy from './pages/VentasHoy';
@@ -18,6 +18,7 @@ import PlanesMensuales from './pages/PlanesMensuales';
 function App() {
   const [activeTab, setActiveTab] = useState('resumen');
   const [autoOpen, setAutoOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // GLOBAL STATE
   const [ventas, setVentas] = useState([]);
@@ -56,6 +57,7 @@ function App() {
   const handleSidebarClick = (tab) => {
     setAutoOpen(false);
     setActiveTab(tab);
+    setIsMobileMenuOpen(false);
   };
 
   const today = new Date().toLocaleDateString('es-ES', { 
@@ -111,7 +113,9 @@ function App() {
 
   return (
     <div className="app-container">
-      <aside className="sidebar">
+      {isMobileMenuOpen && <div className="mobile-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>}
+      
+      <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="logo-container">
           <div className="logo-circle">MK</div>
           <div className="logo-text">FOOD AND GYM</div>
@@ -137,9 +141,14 @@ function App() {
 
       <main className="main-content">
         <div className="header">
-          <div className="greeting">
-            <h1>Hola, <span>Admin</span></h1>
-            <p>{subtitleMap[activeTab]}</p>
+          <div className="greeting-wrapper">
+            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              <Menu size={24} />
+            </button>
+            <div className="greeting">
+              <h1>Hola, <span>Admin</span></h1>
+              <p>{subtitleMap[activeTab]}</p>
+            </div>
           </div>
           <div className="date-badge">{today}</div>
         </div>
