@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Plus, Trash2, X } from 'lucide-react';
+import { Activity, Plus, Trash2, X, Edit2 } from 'lucide-react';
 import { API_URL } from '../config';
 
 const categories = ['Insumos', 'Servicios', 'Descartables', 'Personal', 'Envíos', 'Otros'];
 
 export default function Gastos({ autoOpen, onAutoOpenDone, gastos, setGastos }) {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ concept: '', amount: '', category: 'Insumos' });
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState({ concept: '', amount: '', category: 'Insumos', method: 'Efectivo' });
 
   const getLocalToday = () => {
     const d = new Date();
@@ -24,31 +25,68 @@ export default function Gastos({ autoOpen, onAutoOpenDone, gastos, setGastos }) 
     }
   }, [autoOpen]);
 
-  const handleAdd = async () => {
+  const handleAddOrEdit = async () => {
     if (!form.concept || !form.amount) return;
     
-    const newGasto = {
-      id: Date.now(),
-      date: new Date().toISOString().split('T')[0],
-      concept: form.concept,
-      amount: parseInt(form.amount),
-      category: form.category,
-    };
+    if (editingId) {
+      const updated = {
+        concept: form.concept,
+        amount: parseInt(form.amount),
+        category: form.category,
+        method: form.method
+      };
 
-    try {
-      const res = await fetch(`${API_URL}/gastos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newGasto)
-      });
-      if (res.ok) {
-        setGastos([newGasto, ...gastos]);
-        setForm({ concept: '', amount: '', category: 'Insumos' });
-        setShowForm(false);
+      try {
+        const res = await fetch(`${API_URL}/gastos/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated)
+        });
+        if (res.ok) {
+          setGastos(gastos.map(g => g.id === editingId ? { ...g, ...updated } : g));
+          setForm({ concept: '', amount: '', category: 'Insumos', method: 'Efectivo' });
+          setShowForm(false);
+          setEditingId(null);
+        }
+      } catch (e) {
+        console.error(e);
       }
-    } catch (e) {
-      console.error(e);
+    } else {
+      const newGasto = {
+        id: Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        concept: form.concept,
+        amount: parseInt(form.amount),
+        category: form.category,
+        method: form.method || 'Efectivo'
+      };
+
+      try {
+        const res = await fetch(`${API_URL}/gastos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newGasto)
+        });
+        if (res.ok) {
+          setGastos([newGasto, ...gastos]);
+          setForm({ concept: '', amount: '', category: 'Insumos', method: 'Efectivo' });
+          setShowForm(false);
+        }
+      } catch (e) {
+        console.error(e);
+      }
     }
+  };
+
+  const handleEdit = (gasto) => {
+    setEditingId(gasto.id);
+    setForm({
+      concept: gasto.concept,
+      amount: gasto.amount.toString(),
+      category: gasto.category,
+      method: gasto.method || 'Efectivo'
+    });
+    setShowForm(true);
   };
 
   const handleDelete = async (id) => {
@@ -110,8 +148,17 @@ export default function Gastos({ autoOpen, onAutoOpenDone, gastos, setGastos }) 
                 {categories.map(c => <option key={c} value={c} />)}
               </datalist>
             </div>
+            <div className="form-group">
+              <label>Método de Pago</label>
+              <select value={form.method} onChange={e => setForm({ ...form, method: e.target.value })}>
+                <option>Efectivo</option>
+                <option>Transferencia</option>
+              </select>
+            </div>
           </div>
-          <button className="btn-primary" onClick={handleAdd} style={{ marginTop: '1rem' }}>CONFIRMAR GASTO</button>
+          <button className="btn-primary" onClick={handleAddOrEdit} style={{ marginTop: '1rem' }}>
+            {editingId ? 'GUARDAR CAMBIOS' : 'CONFIRMAR GASTO'}
+          </button>
         </div>
       )}
 
@@ -124,9 +171,11 @@ export default function Gastos({ autoOpen, onAutoOpenDone, gastos, setGastos }) 
             </div>
             <div className="entry-details">
               <h3>{g.concept}</h3>
+              <p style={{ opacity: 0.7, fontSize: '0.85rem' }}>{g.method || 'Efectivo'}</p>
             </div>
             <div className="entry-amount negative">-${g.amount.toLocaleString()}</div>
             <div className="icon-actions">
+              <button className="icon-btn edit" onClick={() => handleEdit(g)} style={{ color: 'var(--text-secondary)' }}><Edit2 size={16} /></button>
               <button className="icon-btn delete" onClick={() => handleDelete(g.id)}><Trash2 size={16} /></button>
             </div>
           </div>

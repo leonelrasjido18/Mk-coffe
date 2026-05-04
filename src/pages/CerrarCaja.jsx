@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { Save, CheckCircle, AlertCircle, Truck } from 'lucide-react';
 import { API_URL } from '../config';
 
-export default function CerrarCaja({ ventas, gastos, config }) {
+export default function CerrarCaja({ ventas, gastos, reservas, config }) {
   const [efectivoInicial, setEfectivoInicial] = useState('5000');
-  const [reservaEfectivo, setReservaEfectivo] = useState('5000');
   const [confirmed, setConfirmed] = useState(false);
 
   const getLocalToday = () => {
@@ -19,7 +18,12 @@ export default function CerrarCaja({ ventas, gastos, config }) {
 
   const ventasEfectivo = todayVentas.filter(v => v.method === 'Efectivo').reduce((a, v) => a + v.amount, 0);
   const ventasTransferencia = todayVentas.filter(v => v.method === 'Transferencia').reduce((a, v) => a + v.amount, 0);
-  const totalGastos = todayGastos.reduce((a, g) => a + g.amount, 0);
+  
+  const gastosEfectivo = todayGastos.filter(g => g.method !== 'Transferencia').reduce((a, g) => a + g.amount, 0);
+  const gastosTransferencia = todayGastos.filter(g => g.method === 'Transferencia').reduce((a, g) => a + g.amount, 0);
+  const totalGastos = gastosEfectivo + gastosTransferencia;
+
+  const reservasHoy = reservas ? reservas.filter(r => r.date === todayStr).reduce((a, r) => a + r.amount, 0) : 0;
 
   // Envíos
   const envios = todayVentas.filter(v => v.conEnvio);
@@ -36,11 +40,13 @@ export default function CerrarCaja({ ventas, gastos, config }) {
   // Movimiento real de dinero
   const efectivoReal = parseInt(efectivoInicial || 0)
     + ventasEfectivo
-    - totalGastos
+    - gastosEfectivo
+    - reservasHoy
     + enviosClienteEfect    // envíos cobrados en efectivo
     - enviosNosotrosEfect;  // envíos pagados en efectivo
 
   const transferenciaReal = ventasTransferencia
+    - gastosTransferencia
     + enviosClienteTransf   // envíos cobrados por transferencia
     - enviosNosotrosTransf; // envíos pagados por transferencia
 
@@ -66,9 +72,8 @@ Fecha: ${formattedDate}
 📊 Balance Neto: $${balanceNeto.toLocaleString()}
 
 *Cierre Físico y Digital*
+💰 Reservas Apartadas Hoy: $${reservasHoy.toLocaleString()}
 💵 Efectivo en Caja Esperado: $${efectivoReal.toLocaleString()}
-🔒 Reserva (para mañana): $${parseInt(reservaEfectivo || 0).toLocaleString()}
-💰 Efectivo a Retirar: $${(efectivoReal - parseInt(reservaEfectivo || 0)).toLocaleString()}
 🏦 Transferencias Totales: $${transferenciaReal.toLocaleString()}`;
       
       try {
@@ -239,7 +244,7 @@ Fecha: ${formattedDate}
               </strong>
             </div>
             <div className="cierre-row" style={{ opacity: 0.7, fontSize: '0.85rem' }}>
-              <span>= Inicial ({parseInt(efectivoInicial || 0).toLocaleString()}) + Ventas Efect. ({ventasEfectivo.toLocaleString()}) - Gastos ({totalGastos.toLocaleString()}) + Envíos Efect. cliente ({enviosClienteEfect.toLocaleString()}) - Envíos pagados efect. ({enviosNosotrosEfect.toLocaleString()})</span>
+              <span>= Inicial ({parseInt(efectivoInicial || 0).toLocaleString()}) + Ventas Efect. ({ventasEfectivo.toLocaleString()}) - Gastos Efect. ({gastosEfectivo.toLocaleString()}) - Reservas ({reservasHoy.toLocaleString()}) + Envíos Efect. cliente ({enviosClienteEfect.toLocaleString()}) - Envíos pagados efect. ({enviosNosotrosEfect.toLocaleString()})</span>
               <span></span>
             </div>
             <div className="cierre-row" style={{ marginTop: '0.5rem' }}>
@@ -249,7 +254,7 @@ Fecha: ${formattedDate}
               </strong>
             </div>
             <div className="cierre-row" style={{ opacity: 0.7, fontSize: '0.85rem' }}>
-              <span>= Ventas Transf. ({ventasTransferencia.toLocaleString()}) + Envíos Transf. cliente ({enviosClienteTransf.toLocaleString()}) - Envíos pagados transf. ({enviosNosotrosTransf.toLocaleString()})</span>
+              <span>= Ventas Transf. ({ventasTransferencia.toLocaleString()}) - Gastos Transf. ({gastosTransferencia.toLocaleString()}) + Envíos Transf. cliente ({enviosClienteTransf.toLocaleString()}) - Envíos pagados transf. ({enviosNosotrosTransf.toLocaleString()})</span>
               <span></span>
             </div>
           </div>
@@ -258,26 +263,20 @@ Fecha: ${formattedDate}
 
           {/* Reserva para mañana */}
           <div className="cierre-section">
-            <h3>🔒 Reserva para el día siguiente</h3>
+            <h3>🔒 Reservas (Efectivo Apartado)</h3>
             <div className="info-banner" style={{ margin: '0.75rem 0 1rem' }}>
-              <span>Dinero en efectivo que dejarás en la caja para tener cambio mañana.</span>
+              <span>Dinero en efectivo que ya separaste en la caja durante el día.</span>
             </div>
             <div className="cierre-row">
-              <span>Monto a apartar en Efectivo</span>
-              <div className="form-group" style={{ maxWidth: '150px', margin: 0 }}>
-                <input
-                  type="number"
-                  placeholder="$0"
-                  value={reservaEfectivo}
-                  onChange={e => setReservaEfectivo(e.target.value)}
-                  style={{ padding: '0.5rem', textAlign: 'right' }}
-                />
-              </div>
+              <span>Total apartado hoy</span>
+              <strong style={{ color: '#EAB308', fontSize: '1.2rem' }}>
+                ${reservasHoy.toLocaleString()}
+              </strong>
             </div>
             <div className="cierre-row highlight" style={{ marginTop: '1rem', backgroundColor: 'var(--surface-color)', padding: '1rem', borderRadius: '8px' }}>
               <span>💰 Efectivo final a retirar</span>
               <strong className="positive" style={{ fontSize: '1.4rem' }}>
-                ${(efectivoReal - parseInt(reservaEfectivo || 0)).toLocaleString()}
+                ${efectivoReal.toLocaleString()}
               </strong>
             </div>
           </div>

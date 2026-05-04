@@ -3,9 +3,13 @@ import { DollarSign, TrendingUp, TrendingDown, Activity, Plus, Save, Calendar, X
 import { API_URL } from '../config';
 import { catalogProducts } from '../data';
 
-export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGastos }) {
+export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGastos, reservas, setReservas }) {
   const [showVentaForm, setShowVentaForm] = useState(false);
   const [showGastoForm, setShowGastoForm] = useState(false);
+  const [showReservaForm, setShowReservaForm] = useState(false);
+
+  // Reserva form
+  const [reservaForm, setReservaForm] = useState({ amount: '', notes: '' });
 
   // Venta form
   const [ventaForm, setVentaForm] = useState({
@@ -16,7 +20,7 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
 
   // Gasto form
   const categories = ['Insumos', 'Servicios', 'Descartables', 'Personal', 'Envíos', 'Otros'];
-  const [gastoForm, setGastoForm] = useState({ concept: '', amount: '', category: 'Insumos' });
+  const [gastoForm, setGastoForm] = useState({ concept: '', amount: '', category: 'Insumos', method: 'Efectivo' });
 
   const getLocalToday = () => {
     const d = new Date();
@@ -27,7 +31,8 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
   // Calculate summaries from global state
   const gananciaHoy = ventas.filter(v => v.date === todayStr).reduce((a, v) => a + v.amount, 0);
   const gastosHoy = gastos.filter(g => g.date === todayStr).reduce((a, g) => a + g.amount, 0);
-  const balanceHoy = gananciaHoy - gastosHoy;
+  const reservasHoy = reservas ? reservas.filter(r => r.date === todayStr).reduce((a, r) => a + r.amount, 0) : 0;
+  const balanceHoy = gananciaHoy - gastosHoy - reservasHoy;
   
   // Envíos
   const enviosHoy = ventas.filter(v => v.date === todayStr && v.conEnvio).reduce((a, v) => a + v.envioAmount, 0);
@@ -53,13 +58,15 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
 
   const gananciaSemana = ventas.filter(v => inWeek(v.date)).reduce((a, v) => a + v.amount, 0);
   const gastosSemana = gastos.filter(g => inWeek(g.date)).reduce((a, g) => a + g.amount, 0);
-  const balanceSemana = gananciaSemana - gastosSemana;
+  const reservasSemana = reservas ? reservas.filter(r => inWeek(r.date)).reduce((a, r) => a + r.amount, 0) : 0;
+  const balanceSemana = gananciaSemana - gastosSemana - reservasSemana;
 
   // --- MES: mes calendario actual ---
   const currentMonth = todayStr.slice(0, 7); // "YYYY-MM"
   const gananciaMes = ventas.filter(v => v.date?.startsWith(currentMonth)).reduce((a, v) => a + v.amount, 0);
   const gastosMes = gastos.filter(g => g.date?.startsWith(currentMonth)).reduce((a, g) => a + g.amount, 0);
-  const balanceMes = gananciaMes - gastosMes;
+  const reservasMes = reservas ? reservas.filter(r => r.date?.startsWith(currentMonth)).reduce((a, r) => a + r.amount, 0) : 0;
+  const balanceMes = gananciaMes - gastosMes - reservasMes;
 
   const handleAddVenta = () => {
     if (!ventaForm.item || !ventaForm.amount) return;
@@ -111,6 +118,7 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
       concept: gastoForm.concept,
       amount: parseInt(gastoForm.amount),
       category: gastoForm.category,
+      method: gastoForm.method,
     };
 
     fetch(`${API_URL}/gastos`, {
@@ -120,8 +128,32 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
     }).then(res => {
       if (res.ok) {
         setGastos([newGasto, ...gastos]);
-        setGastoForm({ concept: '', amount: '', category: 'Insumos' });
+        setGastoForm({ concept: '', amount: '', category: 'Insumos', method: 'Efectivo' });
         setShowGastoForm(false);
+      }
+    }).catch(console.error);
+  };
+
+  const handleAddReserva = () => {
+    if (!reservaForm.amount) return;
+    
+    const newReserva = {
+      id: Date.now(),
+      date: todayStr,
+      time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      amount: parseInt(reservaForm.amount),
+      notes: reservaForm.notes || 'Reserva del día',
+    };
+
+    fetch(`${API_URL}/reservas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newReserva)
+    }).then(res => {
+      if (res.ok) {
+        setReservas([newReserva, ...(reservas || [])]);
+        setReservaForm({ amount: '', notes: '' });
+        setShowReservaForm(false);
       }
     }).catch(console.error);
   };
@@ -206,8 +238,8 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
       </div>
 
       {/* Botones de acción */}
-      <div className="resumen-actions">
-        <button className="resumen-action-btn ventas" onClick={() => { setShowVentaForm(!showVentaForm); setShowGastoForm(false); }}>
+      <div className="resumen-actions" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+        <button className="resumen-action-btn ventas" onClick={() => { setShowVentaForm(!showVentaForm); setShowGastoForm(false); setShowReservaForm(false); }}>
           <div className="action-btn-icon"><Plus size={28} /></div>
           <div className="action-btn-text">
             <strong>Agregar Venta</strong>
@@ -215,11 +247,19 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
           </div>
         </button>
 
-        <button className="resumen-action-btn gastos" onClick={() => { setShowGastoForm(!showGastoForm); setShowVentaForm(false); }}>
+        <button className="resumen-action-btn gastos" onClick={() => { setShowGastoForm(!showGastoForm); setShowVentaForm(false); setShowReservaForm(false); }}>
           <div className="action-btn-icon"><Activity size={28} /></div>
           <div className="action-btn-text">
             <strong>Añadir Gasto</strong>
             <span>Registrar un gasto nuevo</span>
+          </div>
+        </button>
+
+        <button className="resumen-action-btn reservas" onClick={() => { setShowReservaForm(!showReservaForm); setShowVentaForm(false); setShowGastoForm(false); }} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+          <div className="action-btn-icon"><DollarSign size={28} style={{ color: '#EAB308' }} /></div>
+          <div className="action-btn-text">
+            <strong>Añadir Reserva</strong>
+            <span>Separar efectivo en caja</span>
           </div>
         </button>
 
@@ -361,9 +401,41 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
                 {categories.map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
+            <div className="form-group">
+              <label>Método de Pago</label>
+              <select value={gastoForm.method} onChange={e => setGastoForm({ ...gastoForm, method: e.target.value })}>
+                <option>Efectivo</option>
+                <option>Transferencia</option>
+              </select>
+            </div>
           </div>
           <button className="btn-primary" onClick={handleAddGasto} style={{ marginTop: '1.25rem', width: '100%', justifyContent: 'center', padding: '0.85rem' }}>
             CONFIRMAR GASTO
+          </button>
+        </div>
+        </div>
+      )}
+
+      {/* ========== FORMULARIO DE RESERVA (POPUP) ========== */}
+      {showReservaForm && (
+        <div className="modal-overlay fade-in" onClick={(e) => { if (e.target.className.includes('modal-overlay')) setShowReservaForm(false); }}>
+          <div className="form-card modal-form-card fade-in">
+          <div className="form-header">
+            <h3>Separar Reserva (Efectivo)</h3>
+            <button className="icon-btn" onClick={() => setShowReservaForm(false)}><X size={18} /></button>
+          </div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Monto a reservar ($)</label>
+              <input type="number" placeholder="Ej: 5000" value={reservaForm.amount} onChange={e => setReservaForm({ ...reservaForm, amount: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label>Nota (Opcional)</label>
+              <input type="text" placeholder="Ej: Cambio para mañana" value={reservaForm.notes} onChange={e => setReservaForm({ ...reservaForm, notes: e.target.value })} />
+            </div>
+          </div>
+          <button className="btn-primary" onClick={handleAddReserva} style={{ marginTop: '1.25rem', width: '100%', justifyContent: 'center', padding: '0.85rem', backgroundColor: '#EAB308', color: '#000' }}>
+            CONFIRMAR RESERVA
           </button>
         </div>
         </div>

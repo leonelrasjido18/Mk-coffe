@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Activity, Clock, Plus, Download, FileText, Trash2, X, Truck } from 'lucide-react';
+import { DollarSign, Activity, Clock, Plus, Download, FileText, Trash2, X, Truck, Edit2 } from 'lucide-react';
 import { API_URL } from '../config';
 import { catalogProducts } from '../data';
 
@@ -11,6 +11,7 @@ const emptyForm = {
 
 export default function VentasHoy({ autoOpen, onAutoOpenDone, ventas, setVentas }) {
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ ...emptyForm });
 
   // Totales
@@ -40,44 +41,92 @@ export default function VentasHoy({ autoOpen, onAutoOpenDone, ventas, setVentas 
     .filter(v => v.envioPagoNosotros === 'Transferencia')
     .reduce((a, v) => a + v.envioAmount, 0);
 
-  const handleAdd = async () => {
+  const handleAddOrEdit = async () => {
     if (!form.item || !form.amount) return;
     const now = new Date();
     
     let finalCustomerName = form.customer.trim();
     if (!finalCustomerName) {
-      finalCustomerName = `Venta ${ventas.length + 1}`;
+      finalCustomerName = `Venta ${ventas.length + (editingId ? 0 : 1)}`;
     }
-    const newVenta = {
-      id: Date.now(),
-      time: now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-      date: now.toISOString().split('T')[0],
-      customer: finalCustomerName,
-      item: form.item,
-      amount: parseInt(form.amount),
-      method: form.method,
-      isAlmuerzo: form.isAlmuerzo,
-      conEnvio: form.isAlmuerzo && form.conEnvio,
-      envioAmount: form.isAlmuerzo && form.conEnvio ? parseInt(form.envioAmount || 0) : 0,
-      envioPagoCliente: form.isAlmuerzo && form.conEnvio ? form.envioPagoCliente : '',
-      envioPagoNosotros: form.isAlmuerzo && form.conEnvio ? form.envioPagoNosotros : '',
-      status: 'Completado',
-    };
 
-    try {
-      const res = await fetch(`${API_URL}/ventas`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newVenta)
-      });
-      if (res.ok) {
-        setVentas([newVenta, ...ventas]);
-        setForm({ ...emptyForm });
-        setShowForm(false);
+    if (editingId) {
+      const updated = {
+        customer: finalCustomerName,
+        item: form.item,
+        amount: parseInt(form.amount),
+        method: form.method,
+        isAlmuerzo: form.isAlmuerzo,
+        conEnvio: form.isAlmuerzo && form.conEnvio,
+        envioAmount: form.isAlmuerzo && form.conEnvio ? parseInt(form.envioAmount || 0) : 0,
+        envioPagoCliente: form.isAlmuerzo && form.conEnvio ? form.envioPagoCliente : '',
+        envioPagoNosotros: form.isAlmuerzo && form.conEnvio ? form.envioPagoNosotros : '',
+        status: 'Completado',
+      };
+
+      try {
+        const res = await fetch(`${API_URL}/ventas/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated)
+        });
+        if (res.ok) {
+          setVentas(ventas.map(v => v.id === editingId ? { ...v, ...updated } : v));
+          setForm({ ...emptyForm });
+          setShowForm(false);
+          setEditingId(null);
+        }
+      } catch (e) {
+        console.error(e);
       }
-    } catch (e) {
-      console.error(e);
+    } else {
+      const newVenta = {
+        id: Date.now(),
+        time: now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        date: now.toISOString().split('T')[0],
+        customer: finalCustomerName,
+        item: form.item,
+        amount: parseInt(form.amount),
+        method: form.method,
+        isAlmuerzo: form.isAlmuerzo,
+        conEnvio: form.isAlmuerzo && form.conEnvio,
+        envioAmount: form.isAlmuerzo && form.conEnvio ? parseInt(form.envioAmount || 0) : 0,
+        envioPagoCliente: form.isAlmuerzo && form.conEnvio ? form.envioPagoCliente : '',
+        envioPagoNosotros: form.isAlmuerzo && form.conEnvio ? form.envioPagoNosotros : '',
+        status: 'Completado',
+      };
+
+      try {
+        const res = await fetch(`${API_URL}/ventas`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newVenta)
+        });
+        if (res.ok) {
+          setVentas([newVenta, ...ventas]);
+          setForm({ ...emptyForm });
+          setShowForm(false);
+        }
+      } catch (e) {
+        console.error(e);
+      }
     }
+  };
+
+  const handleEdit = (venta) => {
+    setEditingId(venta.id);
+    setForm({
+      customer: venta.customer,
+      item: venta.item,
+      amount: venta.amount.toString(),
+      method: venta.method || 'Efectivo',
+      isAlmuerzo: venta.isAlmuerzo,
+      conEnvio: venta.conEnvio,
+      envioAmount: venta.envioAmount ? venta.envioAmount.toString() : '',
+      envioPagoCliente: venta.envioPagoCliente || 'Transferencia',
+      envioPagoNosotros: venta.envioPagoNosotros || 'Efectivo',
+    });
+    setShowForm(true);
   };
 
   const handleDelete = async (id) => {
@@ -146,8 +195,8 @@ export default function VentasHoy({ autoOpen, onAutoOpenDone, ventas, setVentas 
       {showForm && (
         <div className="form-card fade-in">
           <div className="form-header">
-            <h3>Registrar Venta</h3>
-            <button className="icon-btn" onClick={() => setShowForm(false)}><X size={18} /></button>
+            <h3>{editingId ? 'Editar Venta' : 'Registrar Venta'}</h3>
+            <button className="icon-btn" onClick={() => { setShowForm(false); setEditingId(null); setForm({...emptyForm}); }}><X size={18} /></button>
           </div>
 
           {/* Toggle almuerzo */}
@@ -242,8 +291,8 @@ export default function VentasHoy({ autoOpen, onAutoOpenDone, ventas, setVentas 
             </div>
           )}
 
-          <button className="btn-primary" onClick={handleAdd} style={{ marginTop: '1.25rem', width: '100%', justifyContent: 'center', padding: '0.85rem' }}>
-            CONFIRMAR VENTA
+          <button className="btn-primary" onClick={handleAddOrEdit} style={{ marginTop: '1.25rem', width: '100%', justifyContent: 'center', padding: '0.85rem' }}>
+            {editingId ? 'GUARDAR CAMBIOS' : 'CONFIRMAR VENTA'}
           </button>
         </div>
       )}
@@ -280,7 +329,7 @@ export default function VentasHoy({ autoOpen, onAutoOpenDone, ventas, setVentas 
             </div>
             <div className="entry-amount positive">${venta.amount.toLocaleString()}</div>
             <div className="icon-actions">
-              <button className="icon-btn"><FileText size={18} /></button>
+              <button className="icon-btn edit" onClick={() => handleEdit(venta)} style={{ color: 'var(--text-secondary)' }}><Edit2 size={18} /></button>
               <button className="icon-btn delete" onClick={() => handleDelete(venta.id)}><Trash2 size={18} /></button>
             </div>
           </div>

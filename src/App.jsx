@@ -23,6 +23,7 @@ function App() {
   // GLOBAL STATE
   const [ventas, setVentas] = useState([]);
   const [gastos, setGastos] = useState([]);
+  const [reservas, setReservas] = useState([]);
   const [planes, setPlanes] = useState([]);
   const [config, setConfig] = useState(initialConfig);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,15 +32,17 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [resVentas, resGastos, resPlanes] = await Promise.all([
+        const [resVentas, resGastos, resPlanes, resReservas] = await Promise.all([
           fetch(`${API_URL}/ventas`),
           fetch(`${API_URL}/gastos`),
-          fetch(`${API_URL}/planes`)
+          fetch(`${API_URL}/planes`),
+          fetch(`${API_URL}/reservas`)
         ]);
         
         if (resVentas.ok) setVentas(await resVentas.json());
         if (resGastos.ok) setGastos(await resGastos.json());
         if (resPlanes.ok) setPlanes(await resPlanes.json());
+        if (resReservas.ok) setReservas(await resReservas.json());
       } catch (error) {
         console.error("Error cargando datos del servidor", error);
       } finally {
@@ -99,7 +102,7 @@ function App() {
     switch (activeTab) {
       case 'resumen': return <Resumen onNavigate={handleNavigate} ventas={ventas} setVentas={setVentas} gastos={gastos} setGastos={setGastos} />;
       case 'ventas': return <VentasHoy autoOpen={autoOpen} onAutoOpenDone={() => setAutoOpen(false)} ventas={ventas} setVentas={setVentas} />;
-      case 'cierre': return <CerrarCaja ventas={ventas} gastos={gastos} config={config} />;
+      case 'cierre': return <CerrarCaja ventas={ventas} gastos={gastos} reservas={reservas} config={config} />;
       case 'gastos': return <Gastos autoOpen={autoOpen} onAutoOpenDone={() => setAutoOpen(false)} gastos={gastos} setGastos={setGastos} />;
       case 'envios': return <Envios ventas={ventas} setVentas={setVentas} />;
       case 'productos': return <Productos />;
@@ -107,7 +110,7 @@ function App() {
       case 'estadisticas': return <Estadisticas ventas={ventas} gastos={gastos} />;
       case 'planes': return <PlanesMensuales planes={planes} setPlanes={setPlanes} />;
       case 'configuracion': return <Configuracion config={config} setConfig={setConfig} />;
-      default: return <Resumen onNavigate={handleNavigate} ventas={ventas} setVentas={setVentas} gastos={gastos} setGastos={setGastos} />;
+      default: return <Resumen onNavigate={handleNavigate} ventas={ventas} setVentas={setVentas} gastos={gastos} setGastos={setGastos} reservas={reservas} setReservas={setReservas} />;
     }
   };
 

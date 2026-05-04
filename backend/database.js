@@ -40,7 +40,24 @@ function createTables() {
         date TEXT,
         concept TEXT,
         amount INTEGER,
-        category TEXT
+        category TEXT,
+        method TEXT DEFAULT 'Efectivo'
+      )
+    `);
+
+    // Try to add method column if it doesn't exist (for existing databases)
+    db.run(`ALTER TABLE gastos ADD COLUMN method TEXT DEFAULT 'Efectivo'`, (err) => {
+      // Ignore error if column already exists
+    });
+
+    // Reservas
+    db.run(`
+      CREATE TABLE IF NOT EXISTS reservas (
+        id INTEGER PRIMARY KEY,
+        date TEXT,
+        time TEXT,
+        amount INTEGER,
+        notes TEXT
       )
     `);
 

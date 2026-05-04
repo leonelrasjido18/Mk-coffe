@@ -50,6 +50,20 @@ app.delete('/api/ventas/:id', (req, res) => {
   });
 });
 
+app.put('/api/ventas/:id', (req, res) => {
+  const { customer, item, amount, method, isAlmuerzo, status } = req.body;
+  const query = `
+    UPDATE ventas 
+    SET customer = ?, item = ?, amount = ?, method = ?, isAlmuerzo = ?, status = ?
+    WHERE id = ?
+  `;
+  const params = [customer, item, amount, method, isAlmuerzo ? 1 : 0, status, req.params.id];
+  db.run(query, params, function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
 // Update envio flag
 app.put('/api/ventas/:id/envio', (req, res) => {
   const { conEnvio, envioAmount } = req.body;
@@ -69,16 +83,59 @@ app.get('/api/gastos', (req, res) => {
 });
 
 app.post('/api/gastos', (req, res) => {
-  const { id, date, concept, amount, category } = req.body;
-  db.run(`INSERT INTO gastos (id, date, concept, amount, category) VALUES (?, ?, ?, ?, ?)`, 
-    [id, date, concept, amount, category], function(err) {
+  const { id, date, concept, amount, category, method } = req.body;
+  db.run(`INSERT INTO gastos (id, date, concept, amount, category, method) VALUES (?, ?, ?, ?, ?, ?)`, 
+    [id, date, concept, amount, category, method || 'Efectivo'], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true, id });
   });
 });
 
+app.put('/api/gastos/:id', (req, res) => {
+  const { concept, amount, category, method } = req.body;
+  db.run(`UPDATE gastos SET concept = ?, amount = ?, category = ?, method = ? WHERE id = ?`, 
+    [concept, amount, category, method || 'Efectivo', req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
 app.delete('/api/gastos/:id', (req, res) => {
   db.run('DELETE FROM gastos WHERE id = ?', [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
+// --- RUTAS DE RESERVAS ---
+
+app.get('/api/reservas', (req, res) => {
+  db.all('SELECT * FROM reservas ORDER BY id DESC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/reservas', (req, res) => {
+  const { id, date, time, amount, notes } = req.body;
+  db.run(`INSERT INTO reservas (id, date, time, amount, notes) VALUES (?, ?, ?, ?, ?)`, 
+    [id, date, time, amount, notes], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, id });
+  });
+});
+
+app.put('/api/reservas/:id', (req, res) => {
+  const { amount, notes } = req.body;
+  db.run(`UPDATE reservas SET amount = ?, notes = ? WHERE id = ?`, 
+    [amount, notes, req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
+app.delete('/api/reservas/:id', (req, res) => {
+  db.run('DELETE FROM reservas WHERE id = ?', [req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true });
   });
