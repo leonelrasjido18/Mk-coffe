@@ -219,7 +219,9 @@ app.post('/api/whatsapp/logout', async (req, res) => {
     await logoutWhatsApp();
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    // No devolver 500: el cliente puede estar inicializándose aún
+    console.warn('⚠️ Logout solicitado pero el cliente no estaba listo:', err.message);
+    res.json({ success: false, message: err.message });
   }
 });
 
