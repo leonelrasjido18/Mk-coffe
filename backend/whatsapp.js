@@ -11,6 +11,7 @@ function initWhatsApp() {
     authStrategy: new LocalAuth({ dataPath: './whatsapp-session' }),
     puppeteer: {
       headless: true,
+      protocolTimeout: 120000, // 120s para VPS con recursos limitados
       args: [
         '--no-sandbox', 
         '--disable-setuid-sandbox',
