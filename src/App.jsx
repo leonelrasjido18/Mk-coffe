@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { initialConfig } from './data';
 import { API_URL } from './config';
-import { 
+import {
   DollarSign, Coffee, PieChart, Save, Activity, Calendar, Truck, BarChart2, Home, Settings, Users, Menu, X
 } from 'lucide-react';
 import Resumen from './pages/Resumen';
@@ -46,7 +46,7 @@ function App() {
           fetch(`${API_URL}/planes`),
           fetch(`${API_URL}/reservas`)
         ]);
-        
+
         if (resVentas.ok) setVentas(await resVentas.json());
         if (resGastos.ok) setGastos(await resGastos.json());
         if (resPlanes.ok) setPlanes(await resPlanes.json());
@@ -71,11 +71,11 @@ function App() {
     setIsMobileMenuOpen(false);
   };
 
-  const today = new Date().toLocaleDateString('es-ES', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const today = new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
 
   const tabs = [
@@ -128,7 +128,7 @@ function App() {
   return (
     <div className="app-container">
       {isMobileMenuOpen && <div className="mobile-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>}
-      
+
       <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="logo-container">
           <div className="logo-circle">MK</div>

@@ -71,10 +71,20 @@ async function sendMessage(phoneNumber, message) {
 
   let formattedNumber = phoneNumber.replace(/[^0-9]/g, '');
   if (formattedNumber.length === 10) {
-    formattedNumber = '549' + formattedNumber; // Auto-add 549 if they just typed the 10 digits
+    // Solo 10 dígitos (sin código de país): agregar 549
+    formattedNumber = '549' + formattedNumber;
+  } else if (formattedNumber.length === 11 && formattedNumber.startsWith('0')) {
+    // 011XXXXXXXX → sacar el 0 y agregar 549
+    formattedNumber = '549' + formattedNumber.substring(1);
   } else if (formattedNumber.startsWith('54') && !formattedNumber.startsWith('549') && formattedNumber.length === 12) {
-    formattedNumber = '549' + formattedNumber.substring(2); // Convert 54... to 549...
+    // 54XXXXXXXXXX (sin el 9 móvil) → agregar 9
+    formattedNumber = '549' + formattedNumber.substring(2);
+  } else if (formattedNumber.startsWith('549') && formattedNumber.length === 13) {
+    // 5493XXXXXXXXX → ya está completo y correcto, no tocar
+    // (ej: +5493875766008 guardado como 5493875766008)
   }
+
+  console.log(`📞 Intentando enviar a: ${phoneNumber} → formateado: ${formattedNumber}`);
 
   try {
     // Pedirle a WhatsApp que valide el número y nos dé el ID oficial
