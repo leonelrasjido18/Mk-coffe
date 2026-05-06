@@ -63,6 +63,11 @@ export default function CerrarCaja({ ventas, gastos, reservas, config }) {
   const [waResult, setWaResult] = useState(null);
 
   const handleConfirmar = async () => {
+    // Guardar automáticamente lo que queda en caja como efectivo inicial del día siguiente
+    const quedaEnCaja = efectivoReal - parseInt(plataASacar || 0);
+    localStorage.setItem('mk_efectivoInicial', quedaEnCaja.toString());
+    setEfectivoInicial(quedaEnCaja.toString());
+
     setConfirmed(true);
 
     const nums = config?.whatsappNumbers || [];
