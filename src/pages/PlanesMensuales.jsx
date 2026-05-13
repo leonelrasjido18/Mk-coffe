@@ -27,7 +27,9 @@ export default function PlanesMensuales({ planes, setPlanes, ventas, setVentas }
     e.preventDefault();
     if (!newClientName || !newTotalMeals) return;
 
-    const precio = parseInt(newPrecio) || 0;
+    const cleanPriceStr = String(newPrecio).replace(/[^0-9]/g, '');
+    const precio = parseInt(cleanPriceStr) || 0;
+
     const newPlan = {
       id: Date.now(),
       cliente: newClientName,
@@ -290,11 +292,10 @@ export default function PlanesMensuales({ planes, setPlanes, ventas, setVentas }
                 <div className="form-group" style={{ marginBottom: '1rem' }}>
                   <label>Monto Final ($)</label>
                   <input 
-                    type="number" 
+                    type="text" 
                     value={newPrecio} 
                     onChange={(e) => setNewPrecio(e.target.value)} 
                     placeholder="Ej: 150000"
-                    min="0"
                   />
                 </div>
                 <div className="form-group" style={{ marginBottom: '0' }}>
