@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Users, Plus, CalendarCheck, Search, History, Check, X, Trash2 } from 'lucide-react';
+import { Users, Plus, CalendarCheck, Search, History, Check, X, Trash2, DollarSign } from 'lucide-react';
 import { API_URL } from '../config';
 
-export default function PlanesMensuales({ planes, setPlanes }) {
+export default function PlanesMensuales({ planes, setPlanes, ventas, setVentas }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -12,6 +12,8 @@ export default function PlanesMensuales({ planes, setPlanes }) {
   const [newClientName, setNewClientName] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
   const [newTotalMeals, setNewTotalMeals] = useState('20');
+  const [newPrecio, setNewPrecio] = useState('');
+  const [newMetodoPago, setNewMetodoPago] = useState('Efectivo');
   const [consumeNotes, setConsumeNotes] = useState('');
   
   // To show success state when marking
@@ -25,12 +27,15 @@ export default function PlanesMensuales({ planes, setPlanes }) {
     e.preventDefault();
     if (!newClientName || !newTotalMeals) return;
 
+    const precio = parseInt(newPrecio) || 0;
     const newPlan = {
       id: Date.now(),
       cliente: newClientName,
       telefono: newClientPhone,
       cantidadTotal: parseInt(newTotalMeals),
       consumidos: 0,
+      precio: precio,
+      metodoPago: newMetodoPago,
       historial: []
     };
 
@@ -41,11 +46,36 @@ export default function PlanesMensuales({ planes, setPlanes }) {
         body: JSON.stringify(newPlan)
       });
       if (res.ok) {
+        const data = await res.json();
         setPlanes([...planes, newPlan]);
+
+        // Si tiene precio, agregar la venta al estado local
+        if (precio > 0 && data.ventaId) {
+          const now = new Date();
+          const newVenta = {
+            id: data.ventaId,
+            time: data.ventaTime || now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+            date: data.ventaDate || now.toISOString().split('T')[0],
+            customer: newClientName,
+            item: `Plan Mensual (${parseInt(newTotalMeals)} almuerzos)`,
+            amount: precio,
+            method: newMetodoPago,
+            isAlmuerzo: false,
+            conEnvio: false,
+            envioAmount: 0,
+            envioPagoCliente: '',
+            envioPagoNosotros: '',
+            status: 'Completado'
+          };
+          setVentas([newVenta, ...ventas]);
+        }
+
         setShowAddModal(false);
         setNewClientName('');
         setNewClientPhone('');
         setNewTotalMeals('20');
+        setNewPrecio('');
+        setNewMetodoPago('Efectivo');
       }
     } catch (e) {
       console.error(e);
@@ -141,6 +171,12 @@ export default function PlanesMensuales({ planes, setPlanes }) {
                 <div className="entry-details" style={{ flex: '1 1 200px' }}>
                   <h3>{plan.cliente}</h3>
                   {plan.telefono && <p>📞 {plan.telefono}</p>}
+                  {plan.precio > 0 && (
+                    <p style={{ marginTop: '4px', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: '600' }}>
+                      <DollarSign size={14} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
+                      {plan.precio.toLocaleString()}
+                    </p>
+                  )}
                   {plan.historial && plan.historial.length > 0 && (
                     <p style={{ marginTop: '4px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                       Última entrega: <strong>{plan.historial[0].fecha}</strong>
@@ -236,7 +272,7 @@ export default function PlanesMensuales({ planes, setPlanes }) {
                   placeholder="Ej: 1123456789"
                 />
               </div>
-              <div className="form-group" style={{ marginBottom: '2rem' }}>
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
                 <label>Cantidad de Almuerzos</label>
                 <input 
                   type="number" 
@@ -245,6 +281,32 @@ export default function PlanesMensuales({ planes, setPlanes }) {
                   required 
                   min="1"
                 />
+              </div>
+              <div style={{ padding: '1rem', background: 'rgba(210, 161, 109, 0.08)', border: '1px solid rgba(210, 161, 109, 0.25)', borderRadius: '12px', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', color: 'var(--accent)', fontWeight: '600', fontSize: '0.9rem' }}>
+                  <DollarSign size={18} />
+                  Precio del Plan
+                </div>
+                <div className="form-group" style={{ marginBottom: '1rem' }}>
+                  <label>Monto Final ($)</label>
+                  <input 
+                    type="number" 
+                    value={newPrecio} 
+                    onChange={(e) => setNewPrecio(e.target.value)} 
+                    placeholder="Ej: 150000"
+                    min="0"
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '0' }}>
+                  <label>Método de Pago</label>
+                  <select value={newMetodoPago} onChange={(e) => setNewMetodoPago(e.target.value)}>
+                    <option>Efectivo</option>
+                    <option>Transferencia</option>
+                  </select>
+                </div>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.75rem', lineHeight: '1.4' }}>
+                  💡 Este monto se registrará automáticamente como ingreso diario al crear el plan.
+                </p>
               </div>
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn-outline" onClick={() => setShowAddModal(false)}>Cancelar</button>

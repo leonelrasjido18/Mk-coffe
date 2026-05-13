@@ -162,11 +162,38 @@ app.get('/api/planes', (req, res) => {
 });
 
 app.post('/api/planes', (req, res) => {
-  const { id, cliente, telefono, cantidadTotal, consumidos } = req.body;
-  db.run(`INSERT INTO planes (id, cliente, telefono, cantidadTotal, consumidos) VALUES (?, ?, ?, ?, ?)`,
-    [id, cliente, telefono, cantidadTotal, consumidos || 0], function(err) {
+  const { id, cliente, telefono, cantidadTotal, consumidos, precio } = req.body;
+  db.run(`INSERT INTO planes (id, cliente, telefono, cantidadTotal, consumidos, precio) VALUES (?, ?, ?, ?, ?, ?)`,
+    [id, cliente, telefono, cantidadTotal, consumidos || 0, precio || 0], function(err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, id });
+
+      // Si tiene precio, crear una venta como ingreso diario
+      if (precio && precio > 0) {
+        const now = new Date();
+        const ventaId = Date.now() + 1; // +1 para evitar colisión con el id del plan
+        const time = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        const date = now.toISOString().split('T')[0];
+        const ventaQuery = `
+          INSERT INTO ventas (id, time, date, customer, item, amount, method, isAlmuerzo, conEnvio, envioAmount, envioPagoCliente, envioPagoNosotros, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const ventaParams = [
+          ventaId, time, date,
+          cliente,
+          `Plan Mensual (${cantidadTotal} almuerzos)`,
+          precio,
+          req.body.metodoPago || 'Efectivo',
+          0, 0, 0, '', '', 'Completado'
+        ];
+        db.run(ventaQuery, ventaParams, function(ventaErr) {
+          if (ventaErr) {
+            console.error('Error creando venta para plan:', ventaErr.message);
+          }
+          res.json({ success: true, id, ventaId, ventaTime: time, ventaDate: date });
+        });
+      } else {
+        res.json({ success: true, id });
+      }
   });
 });
 

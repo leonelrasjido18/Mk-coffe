@@ -68,9 +68,15 @@ function createTables() {
         cliente TEXT,
         telefono TEXT,
         cantidadTotal INTEGER,
-        consumidos INTEGER DEFAULT 0
+        consumidos INTEGER DEFAULT 0,
+        precio INTEGER DEFAULT 0
       )
     `);
+
+    // Try to add precio column if it doesn't exist (for existing databases)
+    db.run(`ALTER TABLE planes ADD COLUMN precio INTEGER DEFAULT 0`, (err) => {
+      // Ignore error if column already exists
+    });
 
     // Historial de Planes
     db.run(`

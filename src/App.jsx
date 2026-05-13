@@ -118,7 +118,7 @@ function App() {
       case 'productos': return <Productos />;
       case 'calendario': return <Calendario ventas={ventas} gastos={gastos} />;
       case 'estadisticas': return <Estadisticas ventas={ventas} gastos={gastos} />;
-      case 'planes': return <PlanesMensuales planes={planes} setPlanes={setPlanes} />;
+      case 'planes': return <PlanesMensuales planes={planes} setPlanes={setPlanes} ventas={ventas} setVentas={setVentas} />;
       case 'configuracion': return <Configuracion config={config} setConfig={setConfig} />;
       case 'reservas': return <Reservas reservas={reservas} setReservas={setReservas} />;
       default: return <Resumen onNavigate={handleNavigate} ventas={ventas} setVentas={setVentas} gastos={gastos} setGastos={setGastos} reservas={reservas} setReservas={setReservas} />;
