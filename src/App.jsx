@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initialConfig } from './data';
 import { API_URL } from './config';
 import {
-  DollarSign, Coffee, PieChart, Save, Activity, Calendar, Truck, BarChart2, Home, Settings, Users, Menu, X
+  DollarSign, Coffee, PieChart, Save, Activity, Calendar, Truck, BarChart2, Home, Settings, Users, Menu, X, Receipt
 } from 'lucide-react';
 import Resumen from './pages/Resumen';
 import VentasHoy from './pages/VentasHoy';
@@ -15,6 +15,7 @@ import CerrarCaja from './pages/CerrarCaja';
 import Configuracion from './pages/Configuracion';
 import PlanesMensuales from './pages/PlanesMensuales';
 import Reservas from './pages/Reservas';
+import CuentasCorrientes from './pages/CuentasCorrientes';
 
 function App() {
   const [activeTab, setActiveTab] = useState('resumen');
@@ -25,6 +26,7 @@ function App() {
   const [ventas, setVentas] = useState([]);
   const [gastos, setGastos] = useState([]);
   const [reservas, setReservas] = useState([]);
+  const [cuentasCorrientes, setCuentasCorrientes] = useState([]);
   const [planes, setPlanes] = useState([]);
   const [config, setConfig] = useState(() => {
     const saved = localStorage.getItem('mk_config');
@@ -40,17 +42,19 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [resVentas, resGastos, resPlanes, resReservas] = await Promise.all([
+        const [resVentas, resGastos, resPlanes, resReservas, resCuentas] = await Promise.all([
           fetch(`${API_URL}/ventas`),
           fetch(`${API_URL}/gastos`),
           fetch(`${API_URL}/planes`),
-          fetch(`${API_URL}/reservas`)
+          fetch(`${API_URL}/reservas`),
+          fetch(`${API_URL}/cuentas-corrientes`)
         ]);
 
         if (resVentas.ok) setVentas(await resVentas.json());
         if (resGastos.ok) setGastos(await resGastos.json());
         if (resPlanes.ok) setPlanes(await resPlanes.json());
         if (resReservas.ok) setReservas(await resReservas.json());
+        if (resCuentas.ok) setCuentasCorrientes(await resCuentas.json());
       } catch (error) {
         console.error("Error cargando datos del servidor", error);
       } finally {
@@ -85,6 +89,7 @@ function App() {
     { key: 'cierre', label: 'Cerrar Caja', icon: Save, section: 'CAJA DIARIA' },
     { key: 'gastos', label: 'Gastos', icon: Activity, section: 'CAJA DIARIA' },
     { key: 'reservas', label: 'Reservas', icon: DollarSign, section: 'CAJA DIARIA' },
+    { key: 'cuentasCorrientes', label: 'Cuentas Corrientes', icon: Receipt, section: 'CAJA DIARIA' },
     { key: 'envios', label: 'Envíos', icon: Truck, section: 'CAJA DIARIA' },
     { key: 'productos', label: 'Productos', icon: Coffee, section: 'NEGOCIO' },
     { key: 'calendario', label: 'Calendario', icon: Calendar, section: 'NEGOCIO' },
@@ -100,6 +105,7 @@ function App() {
     cierre: 'Cierre y balance de caja.',
     gastos: 'Control de gastos diarios.',
     reservas: 'Gestión de efectivo apartado.',
+    cuentasCorrientes: 'Control de consumo de los dueños del local.',
     envios: 'Gestión de envíos y compensaciones.',
     productos: 'Catálogo de productos y menús.',
     calendario: 'Historial de ganancias por día.',
@@ -121,6 +127,7 @@ function App() {
       case 'planes': return <PlanesMensuales planes={planes} setPlanes={setPlanes} ventas={ventas} setVentas={setVentas} />;
       case 'configuracion': return <Configuracion config={config} setConfig={setConfig} />;
       case 'reservas': return <Reservas reservas={reservas} setReservas={setReservas} />;
+      case 'cuentasCorrientes': return <CuentasCorrientes cuentasCorrientes={cuentasCorrientes} setCuentasCorrientes={setCuentasCorrientes} />;
       default: return <Resumen onNavigate={handleNavigate} ventas={ventas} setVentas={setVentas} gastos={gastos} setGastos={setGastos} reservas={reservas} setReservas={setReservas} />;
     }
   };

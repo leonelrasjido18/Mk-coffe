@@ -61,6 +61,19 @@ function createTables() {
       )
     `);
 
+    // Cuentas Corrientes
+    db.run(`
+      CREATE TABLE IF NOT EXISTS cuentas_corrientes (
+        id INTEGER PRIMARY KEY,
+        date TEXT,
+        time TEXT,
+        owner TEXT,
+        item TEXT,
+        amount INTEGER,
+        notes TEXT
+      )
+    `);
+
     // Planes Mensuales
     db.run(`
       CREATE TABLE IF NOT EXISTS planes (

@@ -141,6 +141,40 @@ app.delete('/api/reservas/:id', (req, res) => {
   });
 });
 
+// --- RUTAS DE CUENTAS CORRIENTES ---
+
+app.get('/api/cuentas-corrientes', (req, res) => {
+  db.all('SELECT * FROM cuentas_corrientes ORDER BY id DESC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/cuentas-corrientes', (req, res) => {
+  const { id, date, time, owner, item, amount, notes } = req.body;
+  db.run(`INSERT INTO cuentas_corrientes (id, date, time, owner, item, amount, notes) VALUES (?, ?, ?, ?, ?, ?, ?)`, 
+    [id, date, time, owner, item, amount, notes], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, id });
+  });
+});
+
+app.put('/api/cuentas-corrientes/:id', (req, res) => {
+  const { owner, item, amount, notes } = req.body;
+  db.run(`UPDATE cuentas_corrientes SET owner = ?, item = ?, amount = ?, notes = ? WHERE id = ?`, 
+    [owner, item, amount, notes, req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
+app.delete('/api/cuentas-corrientes/:id', (req, res) => {
+  db.run('DELETE FROM cuentas_corrientes WHERE id = ?', [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
 // --- RUTAS DE PLANES MENSUALES ---
 
 app.get('/api/planes', (req, res) => {
