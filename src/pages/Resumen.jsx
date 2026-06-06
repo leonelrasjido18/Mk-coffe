@@ -33,7 +33,7 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
   const gananciaHoy = ventas.filter(v => v.date === todayStr).reduce((a, v) => a + v.amount, 0);
   const gastosHoy = gastos.filter(g => g.date === todayStr).reduce((a, g) => a + g.amount, 0);
   const reservasHoy = reservas ? reservas.filter(r => r.date === todayStr).reduce((a, r) => a + r.amount, 0) : 0;
-  const balanceHoy = gananciaHoy - gastosHoy - reservasHoy;
+  const balanceHoy = gananciaHoy - gastosHoy;
   
   // Envíos
   const enviosHoy = ventas.filter(v => v.date === todayStr && v.conEnvio).reduce((a, v) => a + v.envioAmount, 0);
@@ -60,14 +60,14 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
   const gananciaSemana = ventas.filter(v => inWeek(v.date)).reduce((a, v) => a + v.amount, 0);
   const gastosSemana = gastos.filter(g => inWeek(g.date)).reduce((a, g) => a + g.amount, 0);
   const reservasSemana = reservas ? reservas.filter(r => inWeek(r.date)).reduce((a, r) => a + r.amount, 0) : 0;
-  const balanceSemana = gananciaSemana - gastosSemana - reservasSemana;
+  const balanceSemana = gananciaSemana - gastosSemana;
 
   // --- MES: mes calendario actual ---
   const currentMonth = todayStr.slice(0, 7); // "YYYY-MM"
   const gananciaMes = ventas.filter(v => v.date?.startsWith(currentMonth)).reduce((a, v) => a + v.amount, 0);
   const gastosMes = gastos.filter(g => g.date?.startsWith(currentMonth)).reduce((a, g) => a + g.amount, 0);
   const reservasMes = reservas ? reservas.filter(r => r.date?.startsWith(currentMonth)).reduce((a, r) => a + r.amount, 0) : 0;
-  const balanceMes = gananciaMes - gastosMes - reservasMes;
+  const balanceMes = gananciaMes - gastosMes;
 
   const handleAddVenta = () => {
     if (!ventaForm.item || !ventaForm.amount) return;
@@ -211,7 +211,7 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
             <span className="resumen-period">HOY</span>
           </div>
           <div>
-            <div className="resumen-main-value positive">${balanceHoy.toLocaleString()}</div>
+            <div className={`resumen-main-value ${balanceHoy >= 0 ? 'positive' : 'negative'}`}>${balanceHoy.toLocaleString()}</div>
             <div className="resumen-sub-row">
               <span><TrendingUp size={14} /> Ventas: <strong>${gananciaHoy.toLocaleString()}</strong></span>
               <span><TrendingDown size={14} /> Gastos: <strong className="negative">${gastosHoy.toLocaleString()}</strong></span>
@@ -225,7 +225,7 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
             <span className="resumen-period">SEMANA</span>
           </div>
           <div>
-            <div className="resumen-main-value positive">${balanceSemana.toLocaleString()}</div>
+            <div className={`resumen-main-value ${balanceSemana >= 0 ? 'positive' : 'negative'}`}>${balanceSemana.toLocaleString()}</div>
             <div className="resumen-sub-row">
               <span><TrendingUp size={14} /> ${gananciaSemana.toLocaleString()}</span>
               <span><TrendingDown size={14} /> <span className="negative">${gastosSemana.toLocaleString()}</span></span>
@@ -239,7 +239,7 @@ export default function Resumen({ onNavigate, ventas, setVentas, gastos, setGast
             <span className="resumen-period">MES</span>
           </div>
           <div>
-            <div className="resumen-main-value positive">${balanceMes.toLocaleString()}</div>
+            <div className={`resumen-main-value ${balanceMes >= 0 ? 'positive' : 'negative'}`}>${balanceMes.toLocaleString()}</div>
             <div className="resumen-sub-row">
               <span><TrendingUp size={14} /> ${gananciaMes.toLocaleString()}</span>
               <span><TrendingDown size={14} /> <span className="negative">${gastosMes.toLocaleString()}</span></span>
